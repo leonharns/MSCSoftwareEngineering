@@ -2,7 +2,8 @@
 //raylib works
 int main() {
     // Initialize a window
-    int width{900}, height{600};
+    //int width{900}, height{600};
+    int width{1920}, height{1080};
     InitWindow(width, height, "Chase Game");
 
     // Circle Coordinates
@@ -12,6 +13,11 @@ int main() {
     int r_circle_x{circle_x + circle_radius};
     int u_circle_y{circle_y - circle_radius};
     int d_circle_y{circle_y + circle_radius};
+    
+    InitAudioDevice();      // Initialize audio device
+
+    Sound fxWav = LoadSound("M1_4_6.wav"); // load soundfile
+    Texture2D background = LoadTexture("my_amazing_texture_painting.png"); // load background image
 
     // Axe Coordinates
     int axe_x{0}, axe_y{0}, axe_length{50};
@@ -21,7 +27,8 @@ int main() {
     int u_axe_y{axe_y};
     int d_axe_y{axe_y + axe_length};
 
-    int direction{10};
+    // int direction{10};
+    float scrollingBack = 0.0f;
 
     bool collision_with_axe =
         (d_axe_y >= u_circle_y) &&
@@ -30,16 +37,22 @@ int main() {
         (r_axe_x >= l_circle_x);
 
     // WindowShouldClose returns true if esc is clicked
-    SetTargetFPS(60);                    // Sets the highest FPS
+    SetTargetFPS(120);                    // Sets the highest FPS
     while(WindowShouldClose() == false) // Keep the Window open
     {
+        if (IsKeyPressed(KEY_SPACE)) PlaySound(fxWav); 
         // Setup Canvas
         BeginDrawing();
         // Clear canvas to a specific color to avoid flicker
-        ClearBackground(WHITE);
+       //ClearBackground(WHITE);
+        
+        ClearBackground(GetColor(0x052c46ff));
+        DrawTextureEx(background, (Vector2){ scrollingBack, 20 }, 0.0f, 1.0f, WHITE);
+        // DrawTextureEx(background, (Vector2){ background.width*2 + scrollingBack, 20 }, 0.0f, 1.0f, WHITE);
+
 
         if (collision_with_axe) {
-            DrawText("Game Over", 400, 200, 20, RED);
+            DrawText("Game Over", 900, 540, 40, RED);
             if(IsKeyDown(KEY_R))
             {
                 DrawText("Lose", 400, 200, 20, RED);
@@ -95,6 +108,9 @@ int main() {
         }
         EndDrawing();
     };
+
+    UnloadSound(fxWav);
+    UnloadTexture(background);
 }
 
 /*******************************************************************************************
