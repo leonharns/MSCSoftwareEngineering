@@ -104,6 +104,9 @@ int main(void) {
     while (!WindowShouldClose()) {
         float deltaTime = GetFrameTime();
         UpdateMusicStream(music);  
+        SetSoundVolume(bul, 0.4f);
+        SetSoundVolume(death, 0.4f);               
+        SetMusicVolume(music, 0.1f);    
         if (!gameOver) {
             playerMiddle = {playerPosition.x - playerTexture[0].width / 2, playerPosition.y - playerTexture[0].height / 2};
             backgroundPosition.y += backgroundScrollSpeed;
@@ -296,7 +299,7 @@ int main(void) {
                 InitPlayerHealth(&playerHealth, 100);
                 InitScore(&pScore, 0);
                 gameOver = false;
-                state = Game;
+                state = Menu;
                 playerPosition = { screenWidth / 2, screenHeight / 2 };
             }
         }
