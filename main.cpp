@@ -37,6 +37,7 @@ int main(void) {
     const int screenWidth = 800;
     const int screenHeight = 450;
 
+    InitAudioDevice();
     InitWindow(screenWidth, screenHeight, "ZambizeeNights");
 
     Vector2 playerPosition = { screenWidth / 2, screenHeight / 2 };
@@ -48,24 +49,34 @@ int main(void) {
     Texture2D playerTexture[8];
     float textureFloat = 0.0f;
     Vector2 playerMiddle = {playerPosition.x - playerTexture[0].width / 2, playerPosition.y - playerTexture[0].height / 2};
-    playerTexture[0] = LoadTexture("R1.png");
-    playerTexture[1] = LoadTexture("R2.png");
-    playerTexture[2] = LoadTexture("U1.png");
-    playerTexture[3] = LoadTexture("U2.png");
-    playerTexture[4] = LoadTexture("L1.png");
-    playerTexture[5] = LoadTexture("L2.png");
-    playerTexture[6] = LoadTexture("D1.png");
-    playerTexture[7] = LoadTexture("D2.png");
+   
+    Font font1 = LoadFont("Resources/romulus.png");     
+    const char msg1[50] = "ZombieLand";
+    Vector2 fontPosition1 = {screenWidth / 2 - MeasureText(msg1, 30) / 2, screenHeight / 2 - 80};
+    playerTexture[0] = LoadTexture("Resources/R1.png");
+    playerTexture[1] = LoadTexture("Resources/R2.png");
+    playerTexture[2] = LoadTexture("Resources/U1.png");
+    playerTexture[3] = LoadTexture("Resources/U2.png");
+    playerTexture[4] = LoadTexture("Resources/L1.png");
+    playerTexture[5] = LoadTexture("Resources/L2.png");
+    playerTexture[6] = LoadTexture("Resources/D1.png");
+    playerTexture[7] = LoadTexture("Resources/D2.png");
     Anim animSprite = Right;
-
-    Texture2D backgroundTexture = LoadTexture("Background.png");
+    Texture2D backgroundTexture = LoadTexture("Resources/Background.png");
     Vector2 backgroundPosition = { 0, 0 };
     float backgroundScrollSpeed = 2.0f;
 
-    Texture2D bulletTexture = LoadTexture("bullet.png");
+    Texture2D bulletTexture = LoadTexture("Resources/bullet.png");
     Bullet bullets[MAX_BULLETS] = { 0 };
     int bulletSpeed = 5;
     
+    Sound death = LoadSound("Resources/death.wav");
+
+    Sound bul = LoadSound("Resources/bul.wav");
+    Music music = LoadMusicStream("resources/sbg.wav");
+    music.looping = true;
+    PlayMusicStream(music);
+
     Enemy enemies[MAX_ENEMIES] = { 0 };
     int enemySpeed = 2;
     float speedTimer = 0.0f;
@@ -80,7 +91,7 @@ int main(void) {
     int powerupSpawnTimer = 0;
     const int powerupSpawnInterval = 10000;
 
-    bool gameOver = false;
+    bool gameOver = true;
 
     State state = Menu;
     Difficulty diff = Easy;
@@ -92,7 +103,7 @@ int main(void) {
 
     while (!WindowShouldClose()) {
         float deltaTime = GetFrameTime();
-
+        UpdateMusicStream(music);  
         if (!gameOver) {
             playerMiddle = {playerPosition.x - playerTexture[0].width / 2, playerPosition.y - playerTexture[0].height / 2};
             backgroundPosition.y += backgroundScrollSpeed;
@@ -136,7 +147,7 @@ int main(void) {
             }
 
                 Vector2 mousePosition = GetMousePosition();
-
+            //Fire bullets at mouse pos
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 for (int i = 0; i < MAX_BULLETS; i++) {
                     if (!bullets[i].active) {
@@ -144,11 +155,12 @@ int main(void) {
                         bullets[i].position = playerPosition;
                         bullets[i].speed = Vector2Normalize(Vector2Subtract(mousePosition, bullets[i].position));
                         bullets[i].speed = Vector2Scale(bullets[i].speed, bulletSpeed);
+                        PlaySound(bul);
                         break;
                     }
                 }
             }
-
+            //handle bullets leaving screen
             for (int i = 0; i < MAX_BULLETS; i++) {
                 if (bullets[i].active) {
                     bullets[i].position = Vector2Add(bullets[i].position, bullets[i].speed);
@@ -159,7 +171,7 @@ int main(void) {
             }
              
             powerupSpawnTimer += GetFrameTime() * 1000;
-
+            //spawn powerup every powerup delay
             if (powerupSpawnTimer >= powerupSpawnInterval) {
                 powerupSpawnTimer = 0;
 
@@ -179,7 +191,7 @@ int main(void) {
                     powerups[i].active = false;
                 }
             }
-            
+            //Cases for handling difficulty, giher difficulty makles more enemies spawn
             switch (diff)
             {
                 case Easy:
@@ -222,13 +234,14 @@ int main(void) {
                     }
                     break;
             }
-
+            //Handles bullet collision and particle effect spawning
             for (int i = 0; i < MAX_BULLETS; i++) {
                 if (bullets[i].active) {
                     for (int j = 0; j < MAX_ENEMIES; j++) {
                         if (enemies[j].active && CheckCollisionCircles(bullets[i].position, 5, enemies[j].position, 10)) {
                             bullets[i].active = false;
                             enemies[j].active = false;
+                            PlaySound(death);
                             IncreaseScore(&pScore, 10);
                             for (int k = 0; k < MAX_PARTICLES; k++) {
                                 if (!particles[k].active) {
@@ -254,7 +267,7 @@ int main(void) {
                 }
             }
             
-
+            //Handles enemy collision with player and enemy ai player tracking
             for (int i = 0; i < MAX_ENEMIES; i++) {
                 if (enemies[i].active) {
                     //enemies[i].position.y -= enemySpeed;
@@ -276,7 +289,9 @@ int main(void) {
                 state = Over;
                 gameOver = true;
             }
-        } else {
+        } 
+        //Game over
+        else {
             if (IsKeyPressed(KEY_R)) {
                 InitPlayerHealth(&playerHealth, 100);
                 InitScore(&pScore, 0);
@@ -291,11 +306,12 @@ int main(void) {
 
         DrawTexture(backgroundTexture, backgroundPosition.x, backgroundPosition.y, WHITE);
         DrawTexture(backgroundTexture, backgroundPosition.x, backgroundPosition.y - screenHeight, WHITE);
-
+        //Cases for drawing menu, game and game over
         switch (state) {
             case Menu:
-                DrawText("Press Enter to start", screenWidth / 2 - MeasureText("Press Enter to start", 20) / 2, screenHeight / 2 - 50, 20, BLACK);
+                DrawTextEx(font1,"Zombie Land", fontPosition1, 30, 1, BLACK);
 
+                DrawText("Press Enter to start", screenWidth / 2 - MeasureText("Press Enter to start", 20) / 2, screenHeight / 2 - 50, 20, BLACK);
 
                 DrawText("Select Difficulty:", screenWidth / 2 - MeasureText("Select Difficulty:", 20) / 2, screenHeight / 2 + 100, 20, BLACK);
 
@@ -316,11 +332,13 @@ int main(void) {
                 if (IsKeyPressed(KEY_ENTER)) {
                     state = Game;
                     InitPlayerHealth(&playerHealth, 100);
+                    gameOver = false;
                 }
                 break;
 
                 case Game:
                     if (!gameOver) {
+                        //Handles player animation switching sprites depending on what state the direction is in
                         switch (animSprite)
                         {
                             case Right:
@@ -367,15 +385,6 @@ int main(void) {
                                 }
                                 break;
                         }
-                        // DrawCircleV(playerPosition, playerRadius, RED);
-                        // if(textureFloat <= 0.5)
-                        // {
-                        //     DrawTexture(playerTexture[0], playerPosition.x - playerTexture[0].width / 2, playerPosition.y - playerTexture[0].height / 2, WHITE);
-                        // }
-                        // if(speedTimer >= 0.5)
-                        // {
-                        //     DrawTextureEx(playerTexture[1], playerMiddle, -90.0f, 1.0f,WHITE);
-                        // }
 
                         for (int i = 0; i < MAX_BULLETS; i++) {
                             if (bullets[i].active) {
@@ -417,6 +426,14 @@ int main(void) {
         EndDrawing();
     }
 
+    for(int i = 0; i < 8; i++)
+    {
+        UnloadTexture(playerTexture[i]);
+    }
+    UnloadTexture(backgroundTexture);
+    UnloadSound(bul);
+    UnloadSound(death);
+    UnloadMusicStream(music);
     CloseWindow();
 
     return 0;
